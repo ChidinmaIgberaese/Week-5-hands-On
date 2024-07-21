@@ -1,5 +1,6 @@
 const express = require("express")
 const app = express()
+const path = require("path")
 const mysql = require("mysql2")
 const cors = require ("cors");
 const bcrypt = require("bcrypt")
@@ -54,10 +55,21 @@ db.connect((err) =>{
 
 //example route to serve index.html
 //user registration route
-//app.post
-//app.get
 //app.put
 //app.delete
+
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '../frontend/public')));
+
+//serve the login.html fillat the root URL 
+//app.get
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/public/login.html'));
+});
+
+
+//app.post
 app.post("/api/register", async (req, res) =>{
     try {
         const users = "SELECT * FROM users WHERE email = ?"
@@ -87,7 +99,30 @@ app.post("/api/register", async (req, res) =>{
 })
 
 
-//user login route
+
+// User login route
+app.post("/api/login", (req, res) => {
+    try {
+        const users = `SELECT * FROM users WHERE email = ?`;
+        db.query(users, [req.body.email], (err, data) => {
+            if (err) {
+                console.error('Database query error:', err);
+                return res.status(500).json("Internal Server Error");
+            }
+
+            if (data.length === 0) return res.status(404).json("User not found!");
+
+            const isPasswordValid = bcrypt.compareSync(req.body.password, data[0].password);
+            if (!isPasswordValid) return res.status(400).json("Invalid email or password!");
+
+            return res.status(200).json("Login Successful");
+        });
+    } catch (error) {
+        console.error("Internal server error:", error);
+        res.status(500).json("Internal Server Error");
+    }
+});
+
 
 
 
